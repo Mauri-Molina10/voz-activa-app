@@ -11,3 +11,4 @@ plotly
 torch
 torchaudio
 ffmpeg-python
+pydub
