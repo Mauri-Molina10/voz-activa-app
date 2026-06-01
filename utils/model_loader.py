@@ -1,5 +1,13 @@
 import joblib
+import os
 
 def cargar_modelo():
-    modelo = joblib.load("modelo_svm_vozactiva.pkl")
-    return modelo
+    
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    model_path = os.path.join(base_dir, "..", "modelo_svm_vozactiva.pkl")
+    
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"¡El modelo no existe en: {model_path}!")
+        
+    return joblib.load(model_path)
