@@ -1,4 +1,7 @@
 streamlit
+streamlit-mic-recorder
+librosa
+matplotlib
 pandas
 numpy
 scikit-learn
