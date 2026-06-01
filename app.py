@@ -1,5 +1,6 @@
 import os
 import tempfile
+import io
 from datetime import datetime
 import streamlit as st
 import pandas as pd
@@ -7,6 +8,7 @@ import plotly.express as px
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
+from pydub import AudioSegment  # <-- Importamos pydub
 from streamlit_mic_recorder import mic_recorder
 from utils.predictor import predecir_audio
 
@@ -20,14 +22,13 @@ if "audio_extension" not in st.session_state: st.session_state.audio_extension =
 
 st.title("🎤 Clasificador Inteligente de Voz")
 
-# 1. Selector de modo (La clave para no mezclar archivos)
+# 1. Selector de modo
 metodo = st.radio("Seleccioná cómo ingresar el audio:", ["Subir archivo", "Grabar con micrófono"])
 
-# Función para limpiar el estado al cambiar de modo
 def limpiar_estado():
     st.session_state.audio_bytes = None
 
-# 2. Entrada de audio según el modo seleccionado
+# 2. Entrada de audio
 if metodo == "Subir archivo":
     uploaded_file = st.file_uploader("📂 Subir archivo", type=["wav", "mp3", "m4a", "ogg"], on_change=limpiar_estado)
     if uploaded_file:
@@ -40,11 +41,20 @@ else:
         st.session_state.audio_bytes = audio_grabado["bytes"]
         st.session_state.audio_extension = "wav"
 
-# 3. Procesamiento y Análisis
+# 3. Procesamiento y Visualización
 if st.session_state.audio_bytes is not None:
-    st.audio(st.session_state.audio_bytes)
     
-    # Crear archivo temporal para librosa y el predictor
+    # --- CORRECCIÓN PARA APPLE: Convertir a MP3 para compatibilidad ---
+    try:
+        audio = AudioSegment.from_file(io.BytesIO(st.session_state.audio_bytes))
+        mp3_io = io.BytesIO()
+        audio.export(mp3_io, format="mp3")
+        st.audio(mp3_io.getvalue(), format="audio/mp3")
+    except Exception:
+        # Fallback si falla la conversión
+        st.audio(st.session_state.audio_bytes)
+    
+    # Crear archivo temporal para análisis (usamos el original para no perder calidad)
     with tempfile.NamedTemporaryFile(delete=False, suffix=f".{st.session_state.audio_extension}") as tmp:
         tmp.write(st.session_state.audio_bytes)
         temp_audio_path = tmp.name
@@ -58,7 +68,7 @@ if st.session_state.audio_bytes is not None:
     except:
         st.warning("No se pudo generar la visualización.")
 
-    # Botón para ejecutar la predicción
+    # Botón Análisis
     if st.button("🚀 Analizar Audio"):
         with st.spinner("Procesando audio..."):
             try:
@@ -70,12 +80,10 @@ if st.session_state.audio_bytes is not None:
                 st.success(f"✅ Predicción: {clase.upper()}")
                 st.write(f"**Texto detectado:** {texto}")
 
-                # Gráfico de probabilidades
                 df_probs = pd.DataFrame({"Clase": list(probs.keys()), "Probabilidad": list(probs.values())})
                 fig = px.bar(df_probs, x="Clase", y="Probabilidad", title="📊 Probabilidades")
                 st.plotly_chart(fig, use_container_width=True)
 
-                # Guardar en historial
                 st.session_state.historial.append({
                     "fecha": datetime.now().strftime("%H:%M:%S"),
                     "texto": texto,
