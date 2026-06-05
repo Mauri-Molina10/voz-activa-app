@@ -6,7 +6,7 @@ from utils.model_loader import cargar_modelo
 # Carga única
 modelo_svm = cargar_modelo()
 modelo_embeddings = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-clases = ["agua", "ayuda", "dolor"]
+clases = ["agua", "fuego", "dolor"]
 
 def predecir_audio(audio_path):
     # 1. Transcribir
