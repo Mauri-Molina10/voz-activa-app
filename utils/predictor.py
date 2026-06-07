@@ -1,4 +1,4 @@
-import gc # Importante: recolector de basura
+import gc
 from sentence_transformers import SentenceTransformer
 from utils.audio_processing import transcribir_audio
 from utils.model_loader import cargar_modelo
@@ -6,7 +6,6 @@ from utils.model_loader import cargar_modelo
 # Carga única
 modelo_svm = cargar_modelo()
 modelo_embeddings = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-clases = ["agua", "fuego", "dolor"]
 
 def predecir_audio(audio_path):
     # 1. Transcribir
@@ -19,12 +18,15 @@ def predecir_audio(audio_path):
     prediccion = modelo_svm.predict(embedding)[0]
     probabilidades = modelo_svm.predict_proba(embedding)[0]
 
-    # --- LIBERACIÓN DE MEMORIA ---
-    del embedding # Borramos el objeto de memoria
-    gc.collect()  # Forzamos al sistema a limpiar RAM
-    # -----------------------------
+    # modelo_svm.classes_ contiene el orden real que aprendió el modelo durante el entrenamiento
+    clases_reales = modelo_svm.classes_ 
+    
+    probs_dict = {clases_reales[i]: float(probabilidades[i]) for i in range(len(clases_reales))}
+    # -----------------------
 
-    probs_dict = {clases[i]: float(probabilidades[i]) for i in range(len(clases))}
+    # --- LIBERACIÓN DE MEMORIA ---
+    del embedding
+    gc.collect() 
 
     return {
         "texto": texto,
